@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+console.log("🔑 API KEY:", import.meta.env.VITE_OPENROUTER_API_KEY);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
