@@ -27,14 +27,34 @@ export async function handler(event) {
       body: event.body,
     });
 
-    const text = await resp.text();
+    const upstreamContentType = resp.headers.get('content-type') || '';
+    const rawBody = await resp.text();
+
+    // If upstream returns JSON, pass through. Otherwise, wrap as JSON error to avoid SyntaxError in client
+    const isJson = upstreamContentType.includes('application/json');
+    if (isJson) {
+      return {
+        statusCode: resp.status,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+        body: rawBody,
+      };
+    }
+
     return {
-      statusCode: resp.status,
+      statusCode: resp.ok ? 200 : resp.status,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
       },
-      body: text,
+      body: JSON.stringify({
+        error: 'Upstream returned non-JSON response',
+        status: resp.status,
+        contentType: upstreamContentType,
+        bodySnippet: rawBody.slice(0, 512),
+      }),
     };
   } catch (e) {
     return {
