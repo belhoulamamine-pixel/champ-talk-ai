@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Moon, Sun, Send, Settings, Sparkles } from "lucide-react";
+import { Moon, Sun, Send, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -16,18 +16,10 @@ const Index = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [apiKey, setApiKey] = useState("");
-  const [showApiDialog, setShowApiDialog] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
-    
-    // Load API key from localStorage
-    const savedApiKey = localStorage.getItem("openrouter_api_key");
-    if (savedApiKey) {
-      setApiKey(savedApiKey);
-    }
   }, [theme]);
 
   useEffect(() => {
@@ -36,12 +28,6 @@ const Index = () => {
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || !selectedChampion) return;
-
-    if (!apiKey.trim()) {
-      toast.error("Please set your OpenRouter API key first");
-      setShowApiDialog(true);
-      return;
-    }
 
     const userMessage: Message = {
       role: "user",
@@ -66,16 +52,10 @@ const Index = () => {
       setMessages((prev) => [...prev, championMessage]);
     } catch (error) {
       console.error("Error:", error);
-      toast.error("Failed to get response. Please check your API key.");
+      toast.error("Failed to get response from server.");
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleApiKeySave = (key: string) => {
-    setApiKey(key);
-    localStorage.setItem("openrouter_api_key", key);
-    toast.success("API key saved successfully");
   };
 
   const handleChampionSelect = (champion: Champion) => {
@@ -98,14 +78,6 @@ const Index = () => {
             <h1 className="text-xl font-bold">League Champion Chat</h1>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowApiDialog(true)}
-              title="API Settings"
-            >
-              <Settings className="w-5 h-5" />
-            </Button>
             <Button
               variant="ghost"
               size="icon"

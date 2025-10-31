@@ -13,5 +13,9 @@ export async function sendMessageToOpenRouter(messages, champion) {
   if (!response.ok) throw new Error("Failed to get response from backend");
 
   const data = await response.json();
+  if (!data?.choices?.[0]?.message?.content) {
+    const serverError = (data && (data.error || data.message)) || "Unexpected server response";
+    throw new Error(typeof serverError === "string" ? serverError : JSON.stringify(serverError));
+  }
   return data.choices[0].message.content;
 }

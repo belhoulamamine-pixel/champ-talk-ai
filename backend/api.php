@@ -1,16 +1,33 @@
 <?php
 header("Content-Type: application/json");
-header("Access-Control-Allow-Origin: *");
+
+// ✅ CORS setup (allow your frontend domain)
+$allowedOrigins = [
+    "https://amine-chatbot.netlify.app", // your deployed Netlify frontend
+    "http://localhost:5173"               // local dev (Vite default)
+];
+
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+if (in_array($origin, $allowedOrigins)) {
+    header("Access-Control-Allow-Origin: $origin");
+}
 header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
 
+// Handle preflight requests
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
 }
 
-// ✅ Load key from Netlify environment (if using Netlify Functions) or from .env on your PHP host
-$apiKey = getenv("OPENROUTER_API_KEY"); // not exposed publicly
+// ✅ Load API key from .env
+$envPath = __DIR__ . '/.env';
+$apiKey = null;
+
+if (file_exists($envPath)) {
+    $env = parse_ini_file($envPath, false, INI_SCANNER_RAW);
+    $apiKey = $env['OPENROUTER_API_KEY'] ?? null;
+}
 
 if (!$apiKey) {
     http_response_code(500);
@@ -18,7 +35,7 @@ if (!$apiKey) {
     exit;
 }
 
-// ✅ Handle request
+// ✅ Read POSTed JSON
 $input = json_decode(file_get_contents("php://input"), true);
 if (!$input || !isset($input['messages'])) {
     http_response_code(400);
@@ -36,7 +53,7 @@ curl_setopt_array($ch, [
         "Authorization: Bearer $apiKey"
     ],
     CURLOPT_POSTFIELDS => json_encode([
-        "model" => "gpt-3.5-turbo",
+        "model" => "gpt-3.5-turbo", // you can change the model
         "messages" => $input['messages']
     ])
 ]);
@@ -50,5 +67,6 @@ if (curl_errno($ch)) {
 }
 curl_close($ch);
 
+// ✅ Return OpenRouter response to frontend
 echo $response;
 ?>
