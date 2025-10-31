@@ -21,39 +21,73 @@ export async function handler(event) {
   }
 
   try {
-    const resp = await fetch('https://chatbot.wuaze.com/backend/api.php', {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) {
+      return {
+        statusCode: 500,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Server missing OPENROUTER_API_KEY' }),
+      };
+    }
+
+    // Validate and parse incoming body
+    let incoming;
+    try {
+      incoming = JSON.parse(event.body || '{}');
+    } catch (e) {
+      return {
+        statusCode: 400,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Invalid JSON body' }),
+      };
+    }
+    if (!incoming || !Array.isArray(incoming.messages)) {
+      return {
+        statusCode: 400,
+        headers: { 'Access-Control-Allow-Origin': '*' },
+        body: JSON.stringify({ error: 'Body must include messages: Message[]' }),
+      };
+    }
+
+    // Call OpenRouter directly
+    const upstream = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: event.body,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: incoming.model || 'gpt-3.5-turbo',
+        messages: incoming.messages,
+      }),
     });
 
-    const upstreamContentType = resp.headers.get('content-type') || '';
-    const rawBody = await resp.text();
+    const contentType = upstream.headers.get('content-type') || '';
+    const text = await upstream.text();
 
-    // If upstream returns JSON, pass through. Otherwise, wrap as JSON error to avoid SyntaxError in client
-    const isJson = upstreamContentType.includes('application/json');
-    if (isJson) {
+    if (contentType.includes('application/json')) {
       return {
-        statusCode: resp.status,
+        statusCode: upstream.status,
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
         },
-        body: rawBody,
+        body: text,
       };
     }
 
+    // Non-JSON from upstream: wrap into JSON to keep client parsing safe
     return {
-      statusCode: resp.ok ? 200 : resp.status,
+      statusCode: upstream.ok ? 200 : upstream.status,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
       },
       body: JSON.stringify({
         error: 'Upstream returned non-JSON response',
-        status: resp.status,
-        contentType: upstreamContentType,
-        bodySnippet: rawBody.slice(0, 512),
+        status: upstream.status,
+        contentType,
+        bodySnippet: text.slice(0, 512),
       }),
     };
   } catch (e) {
