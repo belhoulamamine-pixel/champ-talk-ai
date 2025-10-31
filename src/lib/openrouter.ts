@@ -1,5 +1,5 @@
 export async function sendMessageToOpenRouter(messages, champion) {
-  const response = await fetch("https://chatbot.wuaze.com/backend/api.php", {
+  const response = await fetch("/.netlify/functions/proxy", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
