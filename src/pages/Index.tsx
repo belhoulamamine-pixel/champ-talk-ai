@@ -6,7 +6,6 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import ChampionSelector from "@/components/ChampionSelector";
 import ChatMessage from "@/components/ChatMessage";
-import ApiKeyDialog from "@/components/ApiKeyDialog";
 import { Champion, Message } from "@/types/chat";
 import { champions } from "@/data/champions";
 import { sendMessageToOpenRouter } from "@/lib/openrouter";
@@ -57,7 +56,6 @@ const Index = () => {
       const response = await sendMessageToOpenRouter(
         [...messages, userMessage],
         selectedChampion,
-        apiKey
       );
 
       const championMessage: Message = {
@@ -227,13 +225,6 @@ const Index = () => {
           </div>
         )}
       </main>
-
-      <ApiKeyDialog
-        open={showApiDialog}
-        onOpenChange={setShowApiDialog}
-        onSave={handleApiKeySave}
-        currentKey={apiKey}
-      />
     </div>
   );
 };
