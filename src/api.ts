@@ -1,4 +1,4 @@
-const API_URL = "https://chatbot.wuaze.com/backend/api.php"; // 👈 replace with your PHP backend URL
+const API_URL = "/.netlify/functions/proxy";
 
 export async function sendToOpenAI(messages) {
   const body = {
